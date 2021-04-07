@@ -4,17 +4,12 @@ const path = require("path");
 var bodyParser = require('body-parser')
 const PORT = process.env.PORT || 3000;
 const mongoose = require('mongoose');
+const dbURI = 'mongodb+srv://admin:admin@cluster0.ljlin.mongodb.net/nodekb?retryWrites=true&w=majority';
 
-mongoose.connect('mongodb://localhost/nodekb', {useNewUrlParser: true, useUnifiedTopology: true});
-let db = mongoose.connection;
+mongoose.connect(dbURI, {useNewUrlParser: true, useUnifiedTopology: true})
+    .then(result => console.log('Connected to DB'))
+    .catch(err => console.log(err));
 
-//Check for connect db error
-db.on('error', console.error.bind(console, 'connection error:'));
-
-//Check for connect db success
-db.once('open', () => {
-    console.log('Connected to DB');
-})
 
 //Set public folder
 app.use(express.static(path.join(__dirname, 'public')));
@@ -45,13 +40,13 @@ app.get("/", (req, res) => {
         }
     })
 })
-app.get("/articles/add", (req, res) => {
-    res.render('add_article', {
-        title: 'Add Article'
-    })
+
+//Get add article route
+app.get('/articles/add', (req, res) => {
+    res.render('add_article');
 })
 
-//Add route
+//Add article route
 app.post("/articles/add", (req, res) => {
     const article = new Article();
     article.title = req.body.title;
@@ -71,18 +66,32 @@ app.post("/articles/add", (req, res) => {
 //Detail article route
 app.get("/article/:id", (req, res) => {
     let _id = req.params.id;
-    Article.find({_id: _id}, (err, article) => {
-        if (err) {
-            console.log(err);
-        } else {
-            res.render('index', {
-                title: article.title,
-                article: article
-            })
-        }
-    })
+    Article.findById(_id)
+        .then(article => {
+            res.render('detail_article', {title: article.title, article: article});
+        })
+        .catch(err => console.log(err))
+
 })
 
+//Get edit article route
+app.get('/article/edit/:id', (req, res) => {
+    let _id = req.params.id;
+    Article.findById(_id)
+        .then(article => res.render('edit_article', {title: article.title, article: article}))
+        .catch(err => console.log(err));
+})
 
+//Post edit article route
+app.post('/article/edit/:id', (req, res) => {
+    const article = new Article();
+    article.title = req.body.title;
+    article.author = req.body.author;
+    article.body = req.body.author;
+
+    article.update({_id: }, article)
+        .then(article => res.redirect('/'))
+        .catch(err => console.log(err)); 
+})
 
 app.listen(3000, console.log(` Server running on port ${PORT}`))
